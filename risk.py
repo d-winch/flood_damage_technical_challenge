@@ -16,8 +16,8 @@ environment you are running this script in.
 The damage costs are set within the damage.py file to keep them separate.
 See that file for more information on its use.
 """
-
 import argparse
+import logging
 import math
 from pathlib import Path
 from typing import Optional
@@ -27,11 +27,18 @@ import pandas as pd
 
 from damage import damage_cost
 
+# Set up logging. Create 'log' directory if it doesn't exist.
+Path('./log/').mkdir(parents=True, exist_ok=True)
+logging.basicConfig(level=logging.DEBUG,
+    format = '%(asctime)s %(levelname)s %(message)s',
+    filename = './log/out.log',
+    filemode = 'a'
+)
 
 def read_data_to_df(
     filepath: str, non_damaged_count: Optional[int] = 0
 ) -> pd.DataFrame:
-    """Read a csv file and return a Pandas DataFrame. Combines with a second DataFrame on non-inundated properties if provided.
+    """Read a csv file and return a Pandas DataFrame. Combines with a second DataFrame of non-inundated properties if provided.
 
     Args:
         filepath (str): The file path of the data csv.add()
@@ -42,25 +49,30 @@ def read_data_to_df(
         pd.DataFrame: A Pandas DataFrame consisting of the depth data and any non-inundated properties if provided.
         The only column is "depth_m"
     """
+    logging.info(f"Reading file - {filepath}")
     df = pd.read_csv(filepath, header=0, names=["depth_m"])
 
     if non_damaged_count:
         non_damaged = pd.DataFrame({"depth_m": np.repeat(0, non_damaged_count)})
         df = pd.concat([df, non_damaged], ignore_index=True)
 
+    logging.info(f"Successfully read {filepath} to a Pandas DataFrame")
     return df
 
 
 def check_file_exists(filepath: str) -> bool:
+    print(f"[{filepath}]")
     if not Path(filepath).is_file():
-        raise Exception("File doesn't exist. Please check the filepath.")
+        logging.warning(f"File doesn't exist. Please check the filepath - {filepath}")
+        raise Exception(f"File doesn't exist. Please check the filepath - {filepath}")
     return True
 
 
 def check_file_is_csv(filepath: str) -> bool:
     if not Path(filepath).suffix == ".csv":
+        logging.warning(f"{filepath} is not a csv. Please ensure you provide a comma separated file.")
         raise Exception(
-            "File is not a csv. Please ensure you provide a comma separated file."
+            f"{filepath} is not a csv. Please ensure you provide a comma separated file."
         )
     return True
 
@@ -76,6 +88,7 @@ def get_damage_cost(index: int) -> int:
 
     cost = damage_cost.get(index, -1)
     if cost == -1:
+        logging.warning(f"Something went wrong when assigning the cost to value {index}. Please check it exists in the damage table.")
         raise Exception(
             f"Something went wrong when assigning the cost to value {index}. Please check it exists in the damage table."
         )
@@ -99,8 +112,10 @@ def main() -> None:
         default="0",
         help="The number of non-inundated properties which are not included in the data file",
     )
+    
     args = parser.parse_args()
-
+    logging.info(f"Parsed arguments: {args}")
+    
     print(
         args.filepath, args.non_inundated_count
     )  ######################################### Temporary check
@@ -122,4 +137,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    main() # pragma: no cover
