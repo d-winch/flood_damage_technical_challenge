@@ -19,7 +19,6 @@ See that file for more information on its use.
 import argparse
 import logging
 import math
-from cmath import log
 from pathlib import Path
 
 import pandas as pd
@@ -36,12 +35,10 @@ logging.basicConfig(
 
 
 def read_data_file_to_df(filepath: str) -> pd.DataFrame:
-    """Read a csv file and return a Pandas DataFrame. Combines with a second DataFrame of non-inundated properties if provided.
+    """Read a csv file and return a Pandas DataFrame.
 
     Args:
-        filepath (str): The file path of the data csv.add()
-        non_damaged_count (int, optional): The number of properties in the location which are not included in the data file,
-        i.e., non-inundated properties. Defaults to 0.
+        filepath (str): The file path of the data csv
 
     Returns:
         pd.DataFrame: A Pandas DataFrame consisting of the depth data and any non-inundated properties if provided.
