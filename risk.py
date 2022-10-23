@@ -19,25 +19,23 @@ See that file for more information on its use.
 import argparse
 import logging
 import math
+from cmath import log
 from pathlib import Path
-from typing import Optional
 
-import numpy as np
 import pandas as pd
 
 from damage import damage_cost
 
-# Set up logging. Create 'log' directory if it doesn't exist.
-Path('./log/').mkdir(parents=True, exist_ok=True)
-logging.basicConfig(level=logging.DEBUG,
-    format = '%(asctime)s %(levelname)s %(message)s',
-    filename = './log/out.log',
-    filemode = 'a'
+Path("./log/").mkdir(parents=True, exist_ok=True)
+logging.basicConfig(
+    level=logging.ERROR,
+    format="%(asctime)s %(levelname)s %(message)s",
+    filename="./log/out.log",
+    filemode="a",
 )
 
-def read_data_to_df(
-    filepath: str, non_damaged_count: Optional[int] = 0
-) -> pd.DataFrame:
+
+def read_data_file_to_df(filepath: str) -> pd.DataFrame:
     """Read a csv file and return a Pandas DataFrame. Combines with a second DataFrame of non-inundated properties if provided.
 
     Args:
@@ -52,52 +50,59 @@ def read_data_to_df(
     logging.info(f"Reading file - {filepath}")
     df = pd.read_csv(filepath, header=0, names=["depth_m"])
 
-    if non_damaged_count:
-        non_damaged = pd.DataFrame({"depth_m": np.repeat(0, non_damaged_count)})
-        df = pd.concat([df, non_damaged], ignore_index=True)
-
     logging.info(f"Successfully read {filepath} to a Pandas DataFrame")
     return df
 
 
-def check_file_exists(filepath: str) -> bool:
-    print(f"[{filepath}]")
+def guard_against_missing_file(filepath: str) -> None:
     if not Path(filepath).is_file():
         logging.warning(f"File doesn't exist. Please check the filepath - {filepath}")
         raise Exception(f"File doesn't exist. Please check the filepath - {filepath}")
-    return True
 
 
-def check_file_is_csv(filepath: str) -> bool:
+def guard_against_non_csv_file(filepath: str) -> None:
     if not Path(filepath).suffix == ".csv":
-        logging.warning(f"{filepath} is not a csv. Please ensure you provide a comma separated file.")
+        logging.warning(
+            f"{filepath} is not a csv. Please ensure you provide a comma separated file."
+        )
         raise Exception(
             f"{filepath} is not a csv. Please ensure you provide a comma separated file."
         )
-    return True
 
 
-def get_mean_depth(df: pd.DataFrame) -> float:
-    return df["depth_m"].mean()
+def get_mean_depth(df: pd.DataFrame, percent_inundated: float) -> float:
+    if percent_inundated <= 0:
+        raise Exception(
+            f"Percent inundated must be a positive float: {percent_inundated}."
+        )
+    if percent_inundated > 100:
+        raise Exception(
+            f"Percent inundated must be a positive float less than or equal to 100: {percent_inundated}."
+        )
+    return df["depth_m"].mean() * (percent_inundated / 100)
 
 
-def get_damage_cost(index: int) -> int:
-    # If the mean/index is greater than the max value, assign it to the max to prevent returning None from the dictionary
+def get_damage_cost(mean: float) -> int:
+
+    index = math.ceil(mean)
+
+    # Prevent using a non existing key above max in the dictionary
     if index > max(damage_cost.keys()):
         index = max(damage_cost.keys())
 
-    cost = damage_cost.get(index, -1)
-    if cost == -1:
-        logging.warning(f"Something went wrong when assigning the cost to value {index}. Please check it exists in the damage table.")
+    cost = damage_cost.get(index, None)
+    if cost == None:
+        logging.warning(
+            f"Something went wrong when assigning the cost to value {index}. Please check it exists in the damage table."
+        )
         raise Exception(
             f"Something went wrong when assigning the cost to value {index}. Please check it exists in the damage table."
         )
+
     return cost
 
 
-def main() -> None:
-
-    # Prepare command line arguments
+def get_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "-f",
@@ -106,35 +111,51 @@ def main() -> None:
         help="The local file containing the data to analyse",
     )
     parser.add_argument(
-        "-n",
-        "--non_inundated_count",
-        type=int,
-        default="0",
-        help="The number of non-inundated properties which are not included in the data file",
+        "-p",
+        "--percent_inundated",
+        type=float,
+        default="100",
+        help="The percentage of inundated properties included in the file",
     )
-    
+    parser.add_argument(
+        "-l",
+        "--log_level",
+        type=int,
+        default=40,
+        help="The level for the log level - See https://docs.python.org/3/library/logging.html#logging-levels",
+    )
     args = parser.parse_args()
     logging.info(f"Parsed arguments: {args}")
-    
-    print(
-        args.filepath, args.non_inundated_count
-    )  ######################################### Temporary check
 
-    # Check whether the file exists, and is a csv - error is raised if not
-    check_file_exists(args.filepath)
-    check_file_is_csv(args.filepath)
+    return args
 
-    # Read the csv and add any non-inundated
-    df = read_data_to_df(
-        filepath=args.filepath, non_damaged_count=args.non_inundated_count
-    )
 
-    # Get the mean from the DataFrame and get the damage for it using the ceiling.
-    mean = get_mean_depth(df)
-    print(mean)
-    d = get_damage_cost(math.ceil(mean))
-    print(f"£{d:,}")
+def set_logging_level(log_level: int):
+    if log_level not in [0, 10, 20, 30, 40, 50]:
+        raise Exception(f"Incorrect log level value: {log_level}")
+
+    logging.getLogger().setLevel(log_level)
+
+
+def main() -> None:
+
+    args = get_args()
+
+    set_logging_level(args.log_level)
+
+    guard_against_missing_file(args.filepath)
+    guard_against_non_csv_file(args.filepath)
+
+    df = read_data_file_to_df(filepath=args.filepath)
+
+    mean = get_mean_depth(df, args.percent_inundated)
+    logging.info(f"Mean: {mean}")
+
+    expected_damage = get_damage_cost(mean)
+
+    logging.info(f"Expected damage cost £{expected_damage:,}")
+    print(f"Expected damage cost £{expected_damage:,}")
 
 
 if __name__ == "__main__":
-    main() # pragma: no cover
+    main()  # pragma: no cover

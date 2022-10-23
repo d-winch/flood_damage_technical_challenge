@@ -1,0 +1,4 @@
+2022-10-23 23:20:37,220 INFO Reading file - .\csv\depths.csv
+2022-10-23 23:20:37,223 INFO Successfully read .\csv\depths.csv to a Pandas DataFrame
+2022-10-23 23:20:37,224 INFO Mean: 0.004987416386399867
+2022-10-23 23:20:37,224 INFO Expected damage cost £50,000
