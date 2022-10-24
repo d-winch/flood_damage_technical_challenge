@@ -19,6 +19,7 @@ See that file for more information on its use.
 import argparse
 import logging
 import math
+from typing import Optional
 from pathlib import Path
 
 import pandas as pd
@@ -67,7 +68,7 @@ def guard_against_non_csv_file(filepath: str) -> None:
         )
 
 
-def get_mean_depth(df: pd.DataFrame, percent_inundated: float) -> float:
+def get_mean_depth(df: pd.DataFrame, percent_inundated: Optional[float] = 100) -> float:
     if percent_inundated <= 0:
         raise Exception(
             f"Percent inundated must be a positive float: {percent_inundated}."
@@ -104,6 +105,7 @@ def get_args() -> argparse.Namespace:
     parser.add_argument(
         "-f",
         "--filepath",
+        required=True,
         type=str,
         help="The local file containing the data to analyse",
     )
@@ -112,14 +114,14 @@ def get_args() -> argparse.Namespace:
         "--percent_inundated",
         type=float,
         default="100",
-        help="The percentage of inundated properties included in the file",
+        help="The percentage of inundated properties included in the file, float value e.g., 75.5",
     )
     parser.add_argument(
         "-l",
         "--log_level",
         type=int,
         default=40,
-        help="The level for the log level - See https://docs.python.org/3/library/logging.html#logging-levels",
+        help="The level for logging - See https://docs.python.org/3/library/logging.html#logging-levels",
     )
     args = parser.parse_args()
     logging.info(f"Parsed arguments: {args}")
