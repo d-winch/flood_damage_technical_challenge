@@ -21,10 +21,13 @@ import logging
 import math
 from typing import Optional
 from pathlib import Path
+from decimal import Decimal, getcontext
 
 import pandas as pd
 
 from damage import damage_cost
+
+getcontext().prec = 6
 
 Path("./log/").mkdir(parents=True, exist_ok=True)
 logging.basicConfig(
@@ -77,7 +80,8 @@ def get_mean_depth(df: pd.DataFrame, percent_inundated: Optional[float] = 100) -
         raise Exception(
             f"Percent inundated must be a positive float less than or equal to 100: {percent_inundated}."
         )
-    return df["depth_m"].mean() * (percent_inundated / 100)
+    mean_depth = Decimal(df["depth_m"].mean()) * (Decimal(percent_inundated) / 100)
+    return float(mean_depth)
 
 
 def get_damage_cost(mean: float) -> int:

@@ -1,5 +1,6 @@
 # Testing for risk.py using mypy
 
+from decimal import Decimal
 import pandas as pd
 import pytest
 
@@ -62,7 +63,7 @@ def test_correct_mean_depth_returned_when_100_percent():
 
 def test_correct_mean_depth_returned_when_float_percentage_provided():
     df = pd.DataFrame(data=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], columns=["depth_m"])
-    assert get_mean_depth(df, 47.5) == 2.375
+    assert get_mean_depth(df, 47.2) == 2.36
 
 
 def test_exception_raised_damage_cost_with_minus_value():
