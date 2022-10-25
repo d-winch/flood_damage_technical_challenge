@@ -19,9 +19,6 @@ python risk.py --f ".\csv\depths.csv" --p 75.5 --l 10
 ```
 ## Arguments
 
-Dillinger is currently extended with the following plugins.
-Instructions on how to use them in your own application are linked below.
-
 | Flag | Example | Required | Default |
 | ------ | ------ | ------ | ------ |
 | -f --filepath |./csv/depths.csv | Yes | N/A | 
@@ -29,3 +26,7 @@ Instructions on how to use them in your own application are linked below.
 | -l --log_level | 10 | No | 40 |
 
 [Valid Log levels](https://docs.python.org/3/library/logging.html#logging-levels)
+
+## To Do
+Discuss precision with the team.
+Currently, the application uses decimal.Decimal to calculate the mean to avoid issues with floats.
